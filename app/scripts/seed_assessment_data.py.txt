@@ -1,0 +1,125 @@
+
+Seed assessment data · PY
+"""
+One-off script to seed a handful of sample tests + questions across a few
+languages/domains, so you have real data to demo the assessment flow and
+the language-score summary without manually creating tests via the API.
+ 
+Run once from the portal-fastapi folder with:
+    python -m scripts.seed_assessment_data
+ 
+Safe to re-run — it skips creating a test if one with the same title
+already exists.
+ 
+NOTE: if your app/db/session.py exposes the session factory under a
+different name than `SessionLocal`, adjust the import below to match.
+"""
+ 
+from app.db.session import SessionLocal
+from app.models.models import Test, Question
+ 
+ 
+SAMPLE_TESTS = [
+    {
+        "title": "Python Basics",
+        "discipline": "IT",
+        "category": "Programming",
+        "subcategory": "Python",
+        "topic": None,
+        "duration_minutes": 15,
+        "passing_percent": 40,
+        "questions": [
+            {"text": "What does len([1, 2, 3]) return?", "options": ["2", "3", "4", "Error"], "correct_option": 1},
+            {"text": "Which keyword defines a function in Python?", "options": ["func", "def", "function", "lambda"], "correct_option": 1},
+            {"text": "What is the output of 3 // 2 in Python?", "options": ["1.5", "1", "2", "Error"], "correct_option": 1},
+        ],
+    },
+    {
+        "title": "Java Fundamentals",
+        "discipline": "IT",
+        "category": "Programming",
+        "subcategory": "Java",
+        "topic": None,
+        "duration_minutes": 15,
+        "passing_percent": 40,
+        "questions": [
+            {"text": "Which method is the entry point of a Java program?", "options": ["start()", "main()", "run()", "init()"], "correct_option": 1},
+            {"text": "Which keyword is used to inherit a class in Java?", "options": ["implements", "inherits", "extends", "super"], "correct_option": 2},
+            {"text": "What is the default value of a boolean in Java?", "options": ["true", "false", "0", "null"], "correct_option": 1},
+        ],
+    },
+    {
+        "title": "Financial Accounting Basics",
+        "discipline": "Commerce",
+        "category": "Finance",
+        "subcategory": "Accounting",
+        "topic": None,
+        "duration_minutes": 15,
+        "passing_percent": 40,
+        "questions": [
+            {"text": "Which statement shows a company's profit or loss over a period?", "options": ["Balance Sheet", "Income Statement", "Cash Flow Statement", "Trial Balance"], "correct_option": 1},
+            {"text": "Assets = Liabilities + ?", "options": ["Revenue", "Expenses", "Equity", "Debt"], "correct_option": 2},
+            {"text": "Depreciation is recorded on which type of asset?", "options": ["Current assets", "Fixed assets", "Intangible liabilities", "Equity"], "correct_option": 1},
+        ],
+    },
+    {
+        "title": "Human Anatomy Basics",
+        "discipline": "Medical",
+        "category": "Biology",
+        "subcategory": "Anatomy",
+        "topic": None,
+        "duration_minutes": 15,
+        "passing_percent": 40,
+        "questions": [
+            {"text": "How many chambers does the human heart have?", "options": ["2", "3", "4", "5"], "correct_option": 2},
+            {"text": "Which organ is primarily responsible for filtering blood?", "options": ["Liver", "Kidney", "Spleen", "Pancreas"], "correct_option": 1},
+            {"text": "The femur is located in which part of the body?", "options": ["Arm", "Skull", "Leg", "Spine"], "correct_option": 2},
+        ],
+    },
+]
+ 
+ 
+def seed():
+    db = SessionLocal()
+    try:
+        created = 0
+        for test_data in SAMPLE_TESTS:
+            exists = db.query(Test).filter(Test.title == test_data["title"]).first()
+            if exists:
+                print(f"Skipping (already exists): {test_data['title']}")
+                continue
+ 
+            test = Test(
+                title=test_data["title"],
+                discipline=test_data["discipline"],
+                category=test_data["category"],
+                subcategory=test_data["subcategory"],
+                topic=test_data["topic"],
+                duration_minutes=test_data["duration_minutes"],
+                passing_percent=test_data["passing_percent"],
+            )
+            db.add(test)
+            db.flush()
+ 
+            for i, q in enumerate(test_data["questions"]):
+                db.add(Question(
+                    test_id=test.id,
+                    text=q["text"],
+                    options=q["options"],
+                    correct_option=q["correct_option"],
+                    marks=1,
+                    order_index=i,
+                ))
+ 
+            created += 1
+            print(f"Created: {test_data['title']} ({len(test_data['questions'])} questions)")
+ 
+        db.commit()
+        print(f"\nDone. {created} test(s) created.")
+    finally:
+        db.close()
+ 
+ 
+if __name__ == "__main__":
+    seed()
+ 
